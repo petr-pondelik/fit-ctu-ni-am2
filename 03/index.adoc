@@ -1,0 +1,152 @@
+= HW3: Node.js server in Docker
+
+Simple HTTP server implemented in NodeJS containerized using Docker.
+
+== Implementation
+
+Implementation of HTTP server and corresponding Dockerfile are available within the `src/` directory.
+
+== Execution log
+
+=== Build image
+
+[source,bash]
+----
+sudo docker build -t am2-hw3-nodejs-server .
+
+Sending build context to Docker daemon  3.584kB
+Step 1/5 : FROM node:14
+ ---> e2885a998904
+Step 2/5 : WORKDIR /usr/src/app
+ ---> Running in a8b2dd752a8c
+Removing intermediate container a8b2dd752a8c
+ ---> bbf237ba9117
+Step 3/5 : COPY . .
+ ---> 1dc33296e731
+Step 4/5 : EXPOSE 8080
+ ---> Running in 91eb02a85da7
+Removing intermediate container 91eb02a85da7
+ ---> e867bb44a708
+Step 5/5 : CMD ["node", "server.js"]
+ ---> Running in e0d6e1a36657
+Removing intermediate container e0d6e1a36657
+ ---> 6946f635f53c
+Successfully built 6946f635f53c
+Successfully tagged am2-hw3-nodejs-server:latest
+----
+
+=== Check image
+
+[source,bash]
+----
+sudo docker images
+
+REPOSITORY              TAG       IMAGE ID       CREATED              SIZE
+am2-hw3-nodejs-server   latest    6946f635f53c   About a minute ago   943MB
+node                    14        e2885a998904   3 days ago           943MB
+----
+
+=== Run container
+
+[source,bash]
+----
+sudo docker run -p 8888:8080 -d am2-hw3-nodejs-server
+
+6eb6ec3ca4c3605a54528a72cc7a8644b42e78e1eac40537061014de00008af3
+----
+
+=== Check container state
+
+[source,bash]
+----
+sudo docker container ls
+
+CONTAINER ID   IMAGE                   COMMAND                  CREATED          STATUS          PORTS                    NAMES
+6eb6ec3ca4c3   am2-hw3-nodejs-server   "docker-entrypoint.s…"   16 seconds ago   Up 15 seconds   0.0.0.0:8888->8080/tcp   sad_sammet
+----
+
+=== Requests to the server running within the container
+
+[source,bash]
+----
+curl -i 127.0.0.1:8888/John
+
+HTTP/1.1 200 OK
+Content-Type: text/plain
+Access-Control-Allow-Origin: *
+Date: Mon, 15 Mar 2021 18:46:21 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+Hello John
+
+
+
+curl -i 127.0.0.1:8888/smalljohn
+
+HTTP/1.1 200 OK
+Content-Type: text/plain
+Access-Control-Allow-Origin: *
+Date: Mon, 15 Mar 2021 18:47:50 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+Hello smalljohn
+
+
+
+curl -i 127.0.0.1:8888
+
+HTTP/1.1 404 Not Found
+Access-Control-Allow-Origin: *
+Date: Mon, 15 Mar 2021 18:48:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+
+
+curl -i -X POST 127.0.0.1:8888/post
+
+HTTP/1.1 405 Method Not Allowed
+Access-Control-Allow-Origin: *
+Date: Mon, 15 Mar 2021 18:53:57 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+
+----
+
+=== Stop the container
+
+[source,bash]
+----
+
+sudo docker container stop 6eb6ec3ca4c3
+
+6eb6ec3ca4c3
+
+
+
+sudo docker container ls
+
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+
+----
+
+== Developer's notes
+
+[source,bash]
+----
+# Build docker image
+sudo docker build -t am2-hw3-nodejs-server .
+
+# Run docker container (mapping outer port 8888 to inner port 8080)
+sudo docker run -p 8888:8080 -d am2-hw3-nodejs-server
+
+# Open container's bash
+sudo docker exec -it {container_id} bash
+----

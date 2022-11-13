@@ -1,0 +1,9 @@
+.card-panel {
+    background-color: teal;
+}
+.row {
+    display: flex;
+}
+.row col {
+    flex-direction: column;
+}

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Title</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+</head>
+<body>
+<div class="content">
+    <div class="row indigo darken-1 white-text">
+        <div class="container">
+            <div class="col s12 no-padding">
+                <h1>OAuth - Browser-Based App</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ul id="projects-collection" class="collection"></ul>
+
+<script>
+
+    const CONFIG = {
+        CLIENT_ID: '45ddf1be5ccc0df9e69429cb689143cf8742f6dcfda5d9ac2062dfb24b88cb77',
+        CLIENT_SECRET: 'ad9e45df1304beb8baf0c0131894f5c866ad16af9212378cd4f35d07923af26a',
+        REDIRECT_URI: 'https://127.0.0.1:8080/code',
+        USER_ID: '8847314'
+    }
+
+    let path = window.location.pathname;
+    let accessToken = null;
+
+    function fetchAccessToken(code) {
+        return new Promise((resolve, reject) => {
+            fetch(
+                `https://gitlab.com/oauth/token?client_id=${CONFIG.CLIENT_ID}&client_secret=${CONFIG.CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${CONFIG.REDIRECT_URI}`,
+                {method: 'POST'}
+            )
+                .then((response) => response.json())
+                .then((response) => {
+                    console.log(response);
+                    resolve(response);
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+        });
+    }
+
+    if (path === '/code') {
+        const params = new URLSearchParams(window.location.search);
+        console.log(params.get('code'));
+        let code = params.get('code');
+        fetchAccessToken(code)
+            .then((response) => {
+                console.log(response);
+                sessionStorage.setItem('accessToken', response['access_token']);
+                window.location.href = '/';
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    } else {
+        fetch(
+            `https://gitlab.com/api/v4/users/${CONFIG.USER_ID}/projects`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${sessionStorage.getItem('accessToken')}`
+                }
+            }
+        )
+            .then((response) => {
+                if (response.status === 401) {
+                    window.location.href = `https://gitlab.com/oauth/authorize?client_id=${CONFIG.CLIENT_ID}&redirect_uri=${CONFIG.REDIRECT_URI}&response_type=code`;
+                } else {
+                    return response.json();
+                }
+            })
+            .then((response) => {
+                console.log(response);
+                renderProjectsCollection(response);
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    }
+
+    function renderProjectsCollection(data) {
+        let collection = document.querySelector('#projects-collection');
+        for (const project of data) {
+            console.log(project);
+
+            let item = document.createElement('ul');
+            item.classList.add('collection-item');
+            item.classList.add('avatar');
+
+            let itemTitle = document.createElement('span');
+            itemTitle.classList.add('title');
+            itemTitle.textContent = project['name'];
+
+            let itemContent = document.createElement('p');
+            itemContent.textContent = project['name_with_namespace'];
+
+            item.append(itemTitle);
+            item.append(itemContent);
+
+            collection.append(item);
+        }
+    }
+
+</script>
+</body>
+</html>

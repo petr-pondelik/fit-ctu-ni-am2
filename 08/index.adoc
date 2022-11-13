@@ -1,0 +1,67 @@
+= HW8: OAuth - Browser-Based App
+
+Browser-Based application that connects to GitLab API using OAuth authentication and fetches user's projects list.
+
+== Prerequisites
+
+    node v14.16.0+
+
+== GitLab access
+
+Access to GitLab is provided through following Google account.
+
+U: am2hw8@gmail.com +
+P: 1234abcd*
+
+== GitLab API Authorization
+
+Request authorization code.
+
+----
+GET https://gitlab.com/oauth/authorize?client_id=9fa474cb57852bd1c66cbae83ad7c5acb902cdd679a8637d9758af52e4dcffd0&redirect_uri=https://localhost:8080&response_type=code
+----
+
+With the authorization code returned from the previous request, request an access_token.
+
+----
+POST https://gitlab.com/oauth/token?client_id=9fa474cb57852bd1c66cbae83ad7c5acb902cdd679a8637d9758af52e4dcffd0&client_secret=5c25728db6c6c1f1bb01f6d5d0c5d4d9652d45220d3f2dd8505734b5615a2686&code=c4a8fd72d453049cb163b6fe45c1d333deda272621740e03bcccb393864fa233&grant_type=authorization_code&redirect_uri=https://localhost:8080
+----
+
+Request required projects list.
+
+----
+curl --header "Authorization: Bearer 56a849938d261ac37f84e95e147cb5ffdc6f1c0c006ba6b8f7e6bba5b868b3e6" "https://gitlab.com/api/v4/users/5394156/projects"
+----
+
+== Implementation
+
+=== HTTP/2 server
+
+Application source is provided by simple HTTP/2 server. +
+HTTP/2 server implementation is available within the `src/http2-server.js` file. +
+The server always returns content of `src/public/index.html`.
+
+=== Client-side application
+
+Browser-based client-side application tries to fetch user's projects list.
+
+If the request fails with `401 Unauthorized`, it redirects user to GitLab authorization page. +
+
+When user is redirected back to `redirect_uri`, the application fetches access token and stores the token into session storage.
+
+Stored access token is used for fetching the projects list until it's valid (until it the token expires or the token was revoked). +
+If the access token is not valid, the application starts new authorization process.
+
+Projects list is rendered using `renderProjectsCollection` function as Materialize collection.
+
+== Screenshots
+
+image::results/gitlab-application.png[,900,]
+
+image::results/gitlab-application.png[,900,]
+
+image::results/projects-list-request.png[,900,]
+
+image::results/projects-list-response.png[,500,]
+
+image::results/projects-list.png[,900,]

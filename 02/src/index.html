@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AJAX and XHR states</title>
+    <!-- Materialize Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <style type="text/css">
+        h1 {
+            font-size: 2rem;
+        }
+        .progress {
+            margin-top: 20vh;
+        }
+    </style>
+</head>
+<body>
+
+<div class="content">
+    <div class="row indigo darken-1 white-text">
+        <div class="container">
+            <div class="col s12 no-padding">
+                <h1>AJAX and XHR states</h1>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <a class="waves-effect waves-light btn-large" id="download">Download</a>
+        <div class="progress-container">
+            <div class="progress">
+                <div id="loading-status" class="determinate"></div>
+            </div>
+            <span id="status-description"></span>
+        </div>
+    </div>
+</div>
+
+    <script>
+
+        // URL of the requested file
+        const fileUrl = 'http://127.0.0.1:8080/data/video_games_amazon_reviews.json';
+
+        function resetProgressContainer(container) {
+            container.querySelector("#loading-status").style.width = '0';
+        }
+
+        function download() {
+
+            let progressContainer = document.querySelector('.progress-container');
+
+            // Create XHR object
+            const xhr = new XMLHttpRequest();
+
+            // XHR ready state change handler
+            xhr.onreadystatechange = () => {
+                // Open method was called
+                if (xhr.readyState === XMLHttpRequest.OPENED) {
+                    M.toast({html: 'Loading'});
+                    document.querySelector('#status-description').innerText = 'Loading';
+                }
+                // Send method has been called - headers and status are available
+                if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+                    M.toast({html: 'Loaded'});
+                    document.querySelector('#status-description').innerText = 'Loaded';
+                }
+                // Downloading - responseText holds partial data
+                if (xhr.readyState === XMLHttpRequest.LOADING) {
+                    document.querySelector('#status-description').innerText = 'Downloading';
+                }
+                // The download operation is complete
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    document.querySelector('#status-description').innerText = 'Finished downloading';
+                    setTimeout(() => resetProgressContainer(progressContainer), 1000);
+                    if (xhr.status === 200) {
+                        M.toast({html: 'Downloaded', classes: 'teal accent-4'});
+                    } else {
+                        M.toast({html: 'Download failed', classes: 'red accent-4'});
+                    }
+                }
+            };
+
+            // Update downloading progress
+            xhr.addEventListener('progress', (reqEvent) => {
+                let percent = (reqEvent.loaded / reqEvent.total) * 100;
+                document.querySelector('#loading-status').style.width = percent.toString() + "%";
+            });
+
+            // Handle download abort
+            xhr.addEventListener('abort', () => {
+                setTimeout(() => {
+                    setTimeout(() => resetProgressContainer(progressContainer), 1000);
+                    M.toast({html: 'Download aborted', classes: 'red accent-4'});
+                }, 1000);
+            });
+
+            // Open XHR
+            xhr.open('GET', fileUrl);
+
+            // Set accepted response data format
+            xhr.setRequestHeader('Accept', 'application/json');
+
+            // Send XHR
+            xhr.send();
+        }
+
+        // Add download event listener
+        document.querySelector("#download").addEventListener('click', download);
+
+    </script>
+
+    <!-- Materialize Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+</body>
+</html>

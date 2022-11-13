@@ -1,0 +1,19 @@
+= HW5: Data access
+
+== Task
+
+A company needs to design an AJAX aplication that will access various resources on the Web by using JavaScript code running in a browser. This application is not public and only internal employees of the company can use it. This application will be available at the address http://company.at. Following table shows a list of URL addresses of resources, their formats and HTTP methods that the application will use to access these resources.
+
+Add all possible access technologies to the table for methods GET and DELETE. Note: parameter {dob} means date of birth.
+
+== Access technologies table
+
+|===
+| Resource | Format | GET | DELETE
+
+| http://company.at/customers | XML | XHR | XHR
+| http://company.at/suppliers | JSON | XHR, JSONP | XHR
+| http://weather.at/innsbruck | XML | XHR + CORS | XHR + CORS (Preflight)
+| http://people.at/students | JSON | XHR + CORS, JSONP | XHR + CORS (Preflight)
+| http://people.at/{dob}/contact | VCARD | XHR + CORS | XHR + CORS (Preflight)
+|===

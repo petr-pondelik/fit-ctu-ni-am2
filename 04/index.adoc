@@ -1,0 +1,266 @@
+= HW4: Docker advanced
+
+Communication between linked Docker containers containing redis server, redis client and nodejs http server.
+
+== Implementation
+
+Implementation is available within the `src/` directory.
+
+== Execution log
+
+=== Redis server
+
+Following commands were run within the `src/redis/` directory.
+
+[source,bash]
+----
+# Build the redis image
+
+sudo docker build -t am2-hw4-redis .
+
+Sending build context to Docker daemon  2.048kB
+Step 1/2 : FROM redis:latest
+latest: Pulling from library/redis
+6f28985ad184: Pull complete
+60e8b46025d8: Pull complete
+122fe26e50b0: Pull complete
+de3ca1eb2e20: Pull complete
+4813a7e5bd57: Pull complete
+99dd8d3a66f2: Pull complete
+Digest: sha256:e97d506be34a39fa69f45eea846080d6985c2c9ee338c0d408c7ea4347f014a5
+Status: Downloaded newer image for redis:latest
+ ---> a617c1c92774
+Step 2/2 : EXPOSE 6379
+ ---> Running in 74489d5a05c4
+Removing intermediate container 74489d5a05c4
+ ---> 302e1021cc2e
+Successfully built 302e1021cc2e
+Successfully tagged hw4-redis:latest
+
+
+
+# Check the images
+
+sudo docker images
+
+REPOSITORY             TAG       IMAGE ID       CREATED         SIZE
+am2-hw4-redis-server   latest    9d5c2994d30e   4 seconds ago   105MB
+redis                  latest    a617c1c92774   3 days ago      105MB
+
+
+
+# Run the redis server
+
+sudo docker run -d -p 6379:6379 --name hw4-redis am2-hw4-redis-server
+
+
+
+# Check the redis server container
+
+sudo docker container ls
+
+CONTAINER ID   IMAGE                  COMMAND                  CREATED          STATUS          PORTS                    NAMES
+0d192fa043d8   am2-hw4-redis-server   "docker-entrypoint.s…"   24 seconds ago   Up 23 seconds   0.0.0.0:6379->6379/tcp   hw4-redis
+----
+
+=== Redis client
+
+Following commands were run within the `src/redis/` directory.
+
+[source,bash]
+----
+# Run redis client linked to the redis server and open it's bash
+
+sudo docker run -it --link hw4-redis:redis --name hw4-client redis sh
+
+
+
+# Check if the redis server is within the /etc/hosts
+
+cat /etc/hosts
+
+127.0.0.1       localhost
+::1     localhost ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+172.17.0.2      redis 0d192fa043d8 hw4-redis
+172.17.0.3      3c61d87c1887
+
+
+
+# The redis server has alias redis, so connect to the alias
+
+redis-cli -h redis
+
+
+
+# Insert values under specific keys into redis
+
+SET John 'Thakurova 9, 160 00, Prague'
+OK
+
+SET Karel 'Nějaká ulice, 000 00, Kocourkov'
+OK
+
+
+
+# Test the storage
+
+GET John
+"Thakurova 9, 160 00, Prague"
+
+GET Karel
+"N\xc4\x9bjak\xc3\xa1 ulice, 000 00, Kocourkov"
+
+GET Andrej
+(nil)
+----
+
+=== NodeJS server
+
+Following commands were run under the `src/http` directory.
+
+[source,bash]
+----
+# Build the nodejs server image
+
+sudo docker build -t am2-hw4-nodejs-server .
+
+Sending build context to Docker daemon  332.8kB
+Step 1/7 : FROM node:14
+14: Pulling from library/node
+16cf3fa6cb11: Pull complete
+3ddd031622b3: Pull complete
+69c3fcab77df: Pull complete
+a403cc031cae: Pull complete
+b900c5ffbaf4: Pull complete
+f877dc3acfca: Pull complete
+37e7c47402dc: Pull complete
+880eb09060dd: Pull complete
+36731974ae02: Pull complete
+Digest: sha256:fe842f5b828c121514d62cbe0ace0927aec4f3130297180c3343e54e7ae97362
+Status: Downloaded newer image for node:14
+ ---> e2885a998904
+Step 2/7 : WORKDIR /usr/src/app
+ ---> Running in 75363fc7cdf5
+Removing intermediate container 75363fc7cdf5
+ ---> 24c1afd0f8e8
+Step 3/7 : COPY package*.json ./
+ ---> b1e84ce289a4
+Step 4/7 : RUN npm install
+ ---> Running in 773c3867f5c1
+npm WARN hw4-http-server@1.0.0 No description
+npm WARN hw4-http-server@1.0.0 No repository field.
+
+added 5 packages from 7 contributors and audited 5 packages in 0.775s
+
+1 package is looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+Removing intermediate container 773c3867f5c1
+ ---> 063af35b682d
+Step 5/7 : COPY . .
+ ---> b934fafed184
+Step 6/7 : EXPOSE 8080
+ ---> Running in eaa26eb2fb2e
+Removing intermediate container eaa26eb2fb2e
+ ---> f911731d9beb
+Step 7/7 : CMD ["node", "server.js"]
+ ---> Running in 5ab343e3964c
+Removing intermediate container 5ab343e3964c
+ ---> be80f58f583d
+Successfully built be80f58f583d
+Successfully tagged am2-hw4-nodejs-server:latest
+
+
+
+# Check the created image
+
+sudo docker images
+
+REPOSITORY              TAG       IMAGE ID       CREATED              SIZE
+am2-hw4-nodejs-server   latest    be80f58f583d   About a minute ago   943MB
+am2-hw4-redis-server    latest    9d5c2994d30e   14 minutes ago       105MB
+redis                   latest    a617c1c92774   3 days ago           105MB
+node                    14        e2885a998904   4 days ago           943MB
+
+
+
+# Run nodejs http server container linked with the redis server container
+
+sudo docker run -p 8888:8080 -it --link hw4-redis:redis --name hw4-nodejs-http-server am2-hw4-nodejs-server
+
+Server running at http://0.0.0.0:8080/
+Redis client connected
+
+
+
+# Test the http server
+
+curl -i localhost:8888/person/John/address
+
+HTTP/1.1 200 OK
+Content-Type: text/plain
+Access-Control-Allow-Origin: *
+Date: Tue, 16 Mar 2021 22:59:10 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+Thakurova 9, 160 00, Prague
+
+
+
+curl -i localhost:8888/person/Karel/address
+
+HTTP/1.1 200 OK
+Content-Type: text/plain
+Access-Control-Allow-Origin: *
+Date: Tue, 16 Mar 2021 22:59:37 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+Nějaká ulice, 000 00, Kocourkov
+
+
+
+curl -i localhost:8888/person/nikdo/address
+
+HTTP/1.1 404 Not Found
+Access-Control-Allow-Origin: *
+Date: Tue, 16 Mar 2021 23:00:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+
+
+curl -i localhost:8888/person
+
+HTTP/1.1 404 Not Found
+Access-Control-Allow-Origin: *
+Date: Tue, 16 Mar 2021 23:00:58 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+
+
+curl -i -X POST localhost:8888/person/nikdo/address
+
+HTTP/1.1 405 Method Not Allowed
+Access-Control-Allow-Origin: *
+Date: Tue, 16 Mar 2021 23:03:22 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+----
+
+== Useful commands
+
+    sudo docker container prune

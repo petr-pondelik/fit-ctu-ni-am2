@@ -1,0 +1,176 @@
+= HW1: Simple Stateful/Stateless Server
+
+Both stateful and stateless servers communicate using simple JSON protocol.
+
+== Stateful Server
+
+Stateful server is implemented within `src\stateful.js` file.
+
+Information about state is stored within the session on server. +
+Client's connection to the session is realized via SessionId.
+
+WARNING: SessionId is generated using `Math.random().toString(36).substr(2,15)` which is not recommended for practical use due to entropy issue.
+
+=== API
+
+Server provides following three actions:
+
+==== Open
+
+Open order session.
+
+Request:
+
+    {"action": "open"}
+
+Response:
+
+    {"status": bool, "sessionId": string, "data": object, "msg": ?string}
+
+====  Add
+
+Add the given product into the order session.
+
+Request:
+
+    {"action": "add", "sessionId": string, "data": { "productId": int }}
+
+Response:
+
+    {"status": bool, "sessionId": string, "data": object, "msg": ?string}
+
+==== Process
+
+Process the order.
+
+WARNING: For real usage, the order should be kept in storage after it's processed, just not in session.
+
+Request:
+
+    {"action": "process", "sessionId": string}
+
+Response:
+
+    {"status": bool, "sessionId": string, "data": object, "msg": ?string}
+
+=== Telnet communication
+
+==== Open the connection
+
+    telnet localhost 3000
+
+==== Open order
+
+    {"action": "open"}
+    {"status":true,"data":null,"msg":"Order successfully opened.","sessionId":"ommsc11o26m"}
+
+==== Add products to the order
+
+Try to add products into non-existing order:
+
+    {"action": "add", "sessionId": "o4ax82ung39", "data": { "productId": 1 }}
+    {"status":false,"data":null,"msg":"Can't add product into not opened order.","sessionId":"bgvr2lvx6b"}
+
+Adding products into opened order:
+
+    {"action": "add", "sessionId": "ommsc11o26m", "data": { "productId": 3 }}
+    {"status":true,"data":null,"msg":"Product successfully added into order.","sessionId":"ommsc11o26m"}
+    {"action": "add", "sessionId": "ommsc11o26m", "data": { "productId": 4 }}
+    {"status":true,"data":null,"msg":"Product successfully added into order.","sessionId":"ommsc11o26m"}
+    {"action": "add", "sessionId": "ommsc11o26m", "data": { "productId": 4 }}
+    {"status":true,"data":null,"msg":"Product successfully added into order.","sessionId":"ommsc11o26m"}
+
+==== Process the order
+
+Try to process non-existing order:
+
+    {"action": "process", "sessionId": "bgvr2lvx6b"}
+    {"status":false,"data":null,"msg":"Can't process not opened or empty order.","sessionId":"bgvr2lvx6b"}
+
+Process opened order:
+
+    {"action": "process", "sessionId": "o4ax82ung39"}
+    {"status":true,"data":{"priceTotal":280,"product":{"3":{"product":{"id":3,"name":"Aromatizovaná káva karamel 60g","price":80},"cnt":2},"4":{"product":{"id":4,"name":"Tchibo original 200g","price":120},"cnt":1}}},"msg":"Order successfully processed.","sessionId":null}
+
+== Stateless Server
+
+=== API
+
+Server provides following three actions:
+
+==== Open
+
+Open order session.
+
+Request:
+
+    {"action": "open"}
+
+Response:
+
+    {"status": bool, "data": {"orderId": int}, "msg": ?string}
+
+====  Add
+
+Add the given product into the order session.
+
+Request:
+
+    {"action": "add", "data": {"orderId": int, "productId": int }}
+
+Response:
+
+    {"status": bool, "data": {"orderId": ?int, "productId": int }, "msg": ?string}
+
+==== Process
+
+Process the order.
+
+WARNING: Delete operation simplifies the situation. For real usage, the order should have it's state or the order history should be separated.
+
+Request:
+
+    {"action": "process", "data": {"orderId": int}}
+
+Response:
+
+    {"status": bool, "data": {"order": ?object}, "msg": ?string}
+
+=== Telnet communication
+
+==== Open the connection
+
+    telnet localhost 3000
+
+==== Open order
+
+    {"action": "open"}
+    {"status":true,"data":{"orderId":1},"msg":"Order successfully opened."}
+
+==== Add products to the order
+
+Try to add products into non-existing order:
+
+    {"action": "add", "data": {"orderId": 2, "productId": 1 }}
+    {"status":false,"data":{"orderId":null,"productId":1},"msg":"Can't add product into not opened order."}
+
+Adding products into opened order:
+
+    {"action": "add", "data": {"orderId": 1, "productId": 1 }}
+    {"status":true,"data":{"orderId":1,"productId":1},"msg":"Product successfully added into order."}
+    {"action": "add", "data": {"orderId": 1, "productId": 4 }}
+    {"status":true,"data":{"orderId":1,"productId":4},"msg":"Product successfully added into order."}
+    {"action": "add", "data": {"orderId": 1, "productId": 4 }}
+    {"status":true,"data":{"orderId":1,"productId":4},"msg":"Product successfully added into order."}
+
+==== Process the order
+
+Try to process non-existing order:
+
+    {"action": "process", "data": {"orderId": 2}}
+    {"status":false,"data":{"order":null},"msg":"Can't process not opened or empty order."}
+
+Process opened order:
+
+    {"action": "process", "data": {"orderId": 1}}
+    {"status":true,"data":{"order":{"orderId":1,"priceTotal":330,"products":{"1":{"product":{"id":1,"name":"Tuareg 100g","price":90},"cnt":1},"4":{"product":{"id":4,"name":"Tchibo original 200g","price":120},"cnt":2}}}},"msg":"Order successfully processed."}

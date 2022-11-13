@@ -1,0 +1,21 @@
+= Server-Sent Events
+
+Simple implementation of NodeJs server supporting SSE with simple HTML/JS client.
+
+== Prerequisites
+
+    node v14.16.0+
+
+== Implementation
+
+=== Server
+
+Server generates ConnectionID to identify connected client using current timestamp. +
+Every second it feeds the client with 10 generated messages. +
+Messages aren't shared across the multiple connections and each client has it's own message queue.
+
+=== Client
+
+Client is implemented within the `src/client.html` file. +
+It opens a persistent connection to an HTTP server, which sends events in text/event-stream format. +
+Incoming events are displayed as Bootstrap alerts.
